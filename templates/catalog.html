@@ -1,0 +1,8 @@
+{% extends "boilerplate.html" %}
+{% from "restaurant.html" import render_restaurant %}
+
+{% block wrap %}
+{% for name, path in restaurants %}
+{{ render_restaurant(name, path) }}
+{% endfor %}
+{% endblock %}

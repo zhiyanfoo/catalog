@@ -1,0 +1,12 @@
+{% extends "boilerplate.html" %}
+
+{% block wrap %}
+<form method="post" action="{{path}}"}}>
+  <label>
+    <input type="text" name="restaurant_name">
+  </label>
+  <label>
+    <input type="submit" value="New Restaurant">
+  </label>
+</form>
+{% endblock %}

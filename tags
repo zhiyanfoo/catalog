@@ -1,0 +1,61 @@
+ {{name}}	templates/restaurant.html	/^    <\/h2>$/;"	i
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	0.0.0	/5567535/
+#add-post	static/style.css	/^#add-post {$/;"	i
+*	static/style.css	/^* {$/;"	s
+.form-wrap	static/style.css	/^.form-wrap {$/;"	c
+.login	static/style.css	/^.login {$/;"	c
+.nodecoration	static/style.css	/^.nodecoration {$/;"	c
+.post	static/style.css	/^.post {$/;"	c
+.post-title	static/style.css	/^.post-title {$/;"	c
+.post-top-title	static/style.css	/^.post-top-title {$/;"	c
+.posts	static/style.css	/^.posts {$/;"	c
+.user	static/style.css	/^.user {$/;"	c
+Base	database_setup.py	/^Base = declarative_base()$/;"	v
+DBSession	populate_db.py	/^DBSession = sessionmaker(bind=engine)$/;"	v
+DBSession	webserver.py	/^DBSession = sessionmaker(bind=engine)$/;"	v
+MenuItem	database_setup.py	/^class MenuItem(Base):$/;"	c
+Restaurant	database_setup.py	/^class Restaurant(Base):$/;"	c
+__tablename__	database_setup.py	/^    __tablename__ = 'menu_items'$/;"	v	class:MenuItem	file:
+__tablename__	database_setup.py	/^    __tablename__ = 'restaurant'$/;"	v	class:Restaurant	file:
+course	database_setup.py	/^    course = Column(String(250))$/;"	v	class:MenuItem
+description	database_setup.py	/^    description = Column(String(250))$/;"	v	class:MenuItem
+do_GET	webserver.py	/^    def do_GET(self):$/;"	m	class:webserverHandler
+do_POST	webserver.py	/^    def do_POST(self):$/;"	m	class:webserverHandler
+engine	database_setup.py	/^engine = create_engine("sqlite:\/\/\/restaurantmenu.db")$/;"	v
+engine	populate_db.py	/^engine = create_engine("sqlite:\/\/\/restaurantmenu.db")$/;"	v
+engine	webserver.py	/^engine = create_engine("sqlite:\/\/\/restaurantmenu.db")$/;"	v
+get_restaurant_path	webserver.py	/^def get_restaurant_path(id):$/;"	f
+h1	static/style.css	/^h1 {$/;"	s
+id	database_setup.py	/^    id = Column(Integer, primary_key = True)$/;"	v	class:MenuItem
+id	database_setup.py	/^    id = Column(Integer, primary_key = True)$/;"	v	class:Restaurant
+jinja_env	webserver.py	/^jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),$/;"	v
+m1	populate_db.py	/^m1 = MenuItem(name="mi1", course="c1", description="d1", resturant_id=1)$/;"	v
+main	webserver.py	/^def main():$/;"	f
+match	webserver.py	/^def match(matcher, d):$/;"	f
+name	database_setup.py	/^    name = Column(String(80), nullable = False)$/;"	v	class:MenuItem
+name	database_setup.py	/^    name = Column(String(80), nullable = False)$/;"	v	class:Restaurant
+price	database_setup.py	/^    price = Column(String(8))$/;"	v	class:MenuItem
+r1	populate_db.py	/^r1 = Restaurant(name="r1")$/;"	v
+r2	populate_db.py	/^r2 = Restaurant(name="r2")$/;"	v
+render_str	webserver.py	/^def render_str(template, **params):$/;"	f
+restaurant_delete	webserver.py	/^    def restaurant_delete(self):$/;"	m	class:webserverHandler
+restaurant_edit	webserver.py	/^    def restaurant_edit(self):$/;"	m	class:webserverHandler
+restaurants	webserver.py	/^    def restaurants(self):$/;"	m	class:webserverHandler
+restaurants_new	webserver.py	/^    def restaurants_new(self):$/;"	m	class:webserverHandler
+resturant	database_setup.py	/^    resturant = relationship(Restaurant)$/;"	v	class:MenuItem
+resturant_id	database_setup.py	/^    resturant_id = Column(Integer, ForeignKey('restaurant.id'))$/;"	v	class:MenuItem
+session	populate_db.py	/^session = DBSession()$/;"	v
+session	webserver.py	/^session = DBSession()$/;"	v
+template_dir	webserver.py	/^template_dir = os.path.join(os.path.dirname(__file__), 'templates')$/;"	v
+textarea	static/style.css	/^    textarea {$/;"	s
+textarea	static/style.css	/^textarea {$/;"	s
+valid_get_request	webserver.py	/^    def valid_get_request(self):$/;"	m	class:webserverHandler
+webserverHandler	webserver.py	/^class webserverHandler(BaseHTTPRequestHandler):$/;"	c
+x	populate_db.py	/^x = session.query(Restaurant).filter_by(name='r1').first()$/;"	v
+y	populate_db.py	/^y = session.query(MenuItem).all()$/;"	v
