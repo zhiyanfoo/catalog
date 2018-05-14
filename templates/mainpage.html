@@ -1,0 +1,10 @@
+{% extends "boilerplate.html" %}
+{% from "catalog.html" import render_catalog %}
+
+{% include "header.html" %}
+{% block wrap %}
+  <a href="{{new_catalog_path}}">new catalog</a>
+  {% for name, edit_path, delete_path in name_path %}
+  {{ render_catalog(name, edit_path, delete_path) }}
+{% endfor %}
+{% endblock %}

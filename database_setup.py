@@ -26,7 +26,7 @@ class Catalog(Base):
     user = relationship(User)
 
 
-class Items(Base):
+class Item(Base):
     __tablename__ = 'items'
 
     id = Column(Integer, primary_key=True)

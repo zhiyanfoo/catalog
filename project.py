@@ -12,7 +12,7 @@ from oauth2client.client import FlowExchangeError
 import requests
 import httplib2
 
-from database_setup import Base, Catalog, Items
+from database_setup import Base, User, Catalog, Item
 
 app = Flask(__name__)
 app.secret_key = 'super secret key'
@@ -53,23 +53,22 @@ def catalog():
                       url_for('edit_catalog', id=r.id),
                       url_for('delete_catalog', id=r.id))
                      for r in _catalog]
-        return 'MONEY'
+        return render_template("mainpage.html",
+                               name_path=name_path,
+                               new_catalog_path=url_for('new_catalog_get'))
 
 
 @app.route('/catalog/<int:id>/')
 def catalog_items(id):
     session = DBSession()
     catalog = session.query(Catalog).filter_by(id=id).one()
-    items = session.query(Items).filter_by(catalog_id=id).all()
-    print('jacky')
-    print(type(items))
-    print(items)
+    items = session.query(Item).filter_by(catalog_id=id).all()
     return str(id)
 
 
 @app.route('/catalog/<int:id>/edit/')
 def edit_catalog(id):
-    pass
+    return
 
 
 @app.route('/catalog/<int:id>/delete/')
@@ -91,7 +90,7 @@ def new_catalog_post():
         return redirect('/login')
 
     with session_scope() as session:
-        session.add(Catalog(name=request.form['catalog_name']))
+        session.add(Catalog(name=request.form['name']))
 
     return redirect(url_for('catalog'))
 
@@ -128,7 +127,7 @@ def gconnect():
     url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={}'
            .format(access_token))
     h = httplib2.Http()
-    _, result = json.loads(h.request(url, 'GET'))
+    result = json.loads(h.request(url, 'GET')[1])
     if result.get('error') is not None:
         return json_response(result.get('error'), 500)
 
@@ -200,7 +199,7 @@ def gdisconnect():
 
 def create_user(login_session):
     new_user = User(
-        username=login_session['username'],
+        name=login_session['username'],
         email=login_session['email'],
         picture=login_session['picture'])
     with session_scope() as session:

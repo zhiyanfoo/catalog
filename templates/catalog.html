@@ -1,8 +1,17 @@
-{% extends "boilerplate.html" %}
-{% from "restaurant.html" import render_restaurant %}
-
-{% block wrap %}
-{% for name, path in restaurants %}
-{{ render_restaurant(name, path) }}
-{% endfor %}
-{% endblock %}
+{% macro render_catalog(name, path, sep=False) %}
+  <div class="catalog">
+    <h2>
+      {{name}}
+    </h2>
+    <form method="get" action="{{path}}">
+      <label>
+        <input type="submit" value="Edit">
+      </label>
+    </form>
+    <form method="get" action="{{path}}">
+      <label>
+        <input type="submit" value="Delete">
+      </label>
+    </form>
+  </div>
+{% endmacro %}
