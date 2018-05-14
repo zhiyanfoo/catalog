@@ -196,6 +196,8 @@ def gdisconnect():
 
     return json_response('Failed to revoke token for given user', 400)
 
+# @app.route('
+
 
 def create_user(login_session):
     new_user = User(
