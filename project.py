@@ -340,6 +340,21 @@ def gdisconnect():
     return redirect(url_for('mainpage'))
 
 
+@app.route('/catalog/<int:catalog_id>/item/<int:item_id>/json/')
+def item_get_json(catalog_id, item_id):
+    with session_scope() as session:
+        item = session.query(Item).filter_by(id=item_id).first()
+        if item:
+            d = {'id': item.id,
+                 'name': item.name,
+                 'description': item.description,
+                 'user_id': item.user_id,
+                 'catalog_id': item.catalog_id}
+            return json_response(d, 200)
+
+        json_response({"error": "item does not exist"}, 404)
+
+
 def nocache(view):
     @wraps(view)
     def no_cache(*args, **kwargs):
