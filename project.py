@@ -358,9 +358,10 @@ def catalog_get_json():
         catalog_list = []
         for category in catalog:
             items = session.query(Item).filter_by(catalog_id=category.id).all()
+            from helpers import item_to_tuple
             d = {'id': category.id,
                  'name': category.name,
-                 'items': map(item_to_json, items)}
+                 'items': dict(map(item_to_tuple, items))}
             catalog_list.append(d)
 
         return json_response(catalog_list, 200)
