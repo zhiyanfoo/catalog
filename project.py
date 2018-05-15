@@ -17,7 +17,7 @@ import httplib2
 from database_setup import Base, Catalog, Item
 from helpers import (equal_session_id, get_catalog_info, get_catalog_name,
                      get_catalog, get_user_id, create_user, json_response,
-                     item_to_json)
+                     item_to_json, item_to_tuple)
 
 app = Flask(__name__)
 app.secret_key = 'super secret key'
@@ -358,7 +358,6 @@ def catalog_get_json():
         catalog_list = []
         for category in catalog:
             items = session.query(Item).filter_by(catalog_id=category.id).all()
-            from helpers import item_to_tuple
             d = {'id': category.id,
                  'name': category.name,
                  'items': dict(map(item_to_tuple, items))}
