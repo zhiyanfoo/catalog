@@ -1,0 +1,25 @@
+{% macro render_item(item, user_owns, sep=False) %}
+  <div class="item">
+    <h4>Name: {{item.name}} </h4>
+    <p>Price: {{item.price}}</p>
+    <p>Description: {{item.description}}</p>
+    <p>Created: {{item.created}}</p>
+
+    {% if user_owns %}
+      <form method="get" 
+            action="{{url_for(
+            'edit_item_get', catalog_id=item.catalog_id, item_id=item.id)}}">
+      <label>
+        <input type="submit" value="Edit">
+      </label>
+    </form>
+    <form method="get" 
+          action="{{url_for(
+            'delete_item_get', catalog_id=item.catalog_id, item_id=item.id)}}">
+      <label>
+        <input type="submit" value="Delete">
+      </label>
+    </form>
+    {% endif %}
+  </div>
+{% endmacro %}

@@ -1,6 +1,5 @@
 {% extends "boilerplate.html" %}
 {% block wrap %}
-{% include "header.html" %}
 	<div class="row divider green">
 		<div class="col-md-12"></div>
 	</div>
@@ -20,7 +19,7 @@
 					<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>Save</button>
 				</div>
 			</form>
-      <a href={{url_for('catalog')}}>
+      <a href={{url_for('mainpage')}}>
         <button class="btn btn-default delete">
         <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>Cancel</button>
       </a>

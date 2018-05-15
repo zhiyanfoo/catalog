@@ -1,1 +1,5 @@
 secrets.json
+tags
+populate_db.py
+*.pyc
+catalog.db

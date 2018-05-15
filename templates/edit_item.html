@@ -1,0 +1,47 @@
+{% extends "boilerplate.html" %}
+{% from "render_catalog.html" import render_catalog %}
+
+{% block wrap %}
+  <div class=row>
+    <div class="col-md-3" >
+      <a href="{{url_for('new_catalog_get')}}">new catalog</a>
+      <hr>
+    </div>
+    <div class="col-md-9">
+      <br>
+      <hr>
+    </div>
+  </div>
+  <div class=row>
+    <div class="col-md-3" >
+      {% for name, id, user_owns in catalog_info %}
+      {{ render_catalog(name, id, user_owns) }}
+      {% endfor %}
+    </div>
+    <div class="col-md-9">
+      <h1>Edit Item</h1>
+        <form method = "post">
+          <div class="row add_margin">
+            <div class=col-md-12>
+            <input type="text" maxlength="100" name="name" value="{{item.name}}">
+            </div>
+          </div>
+          <div class="row">
+            <div class=col-md-12>
+            <input type="text" maxlength="100" name="price" value={{item.price}}>
+            </div>
+          </div>
+          <div class="row add_margin">
+            <div class="col-md-12">
+              <textarea name="description" >{{item.description}}</textarea>
+            </div>
+          </div>
+          <div class="row">
+            <div class=col-md-12>
+            <input type="submit">
+            </div>
+          </div>
+        </form>
+    </div>
+  </div>
+{% endblock %}

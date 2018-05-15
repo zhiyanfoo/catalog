@@ -1,0 +1,8 @@
+{% extends "boilerplate.html" %}
+
+{% block wrap %}
+  Are you sure you want to delete {{catalog_name}}?
+  <form method="post">
+    <input type=submit value="yes">
+  </form>
+{% endblock %}

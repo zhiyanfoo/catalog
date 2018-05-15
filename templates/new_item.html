@@ -1,0 +1,40 @@
+{% extends "cover.html" %}
+
+{% block content %}
+	<div class="row">
+		<div class="col-md-12">
+      <h2>Add Item</h2>
+      <form method="post" action="{{url_for('new_item_post')}}">
+        <div class="row add_margin">
+          <div class=col-md-12>
+          <input type="text" maxlength="100" name="name" placeholder="name">
+          </div>
+        </div>
+        <div class="row">
+          <div class=col-md-12>
+          <input type="text" maxlength="100" name="price" placeholder="price">
+          </div>
+        </div>
+        <div class="row add_margin">
+          <div class="col-md-12">
+          <textarea name="description" placeholder="description"></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div class=col-md-12>
+            <select name="catalog">
+              {% for name, _, _ in catalog_info %}
+                <option value="{{name}}">{{name}}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class=col-md-12>
+          <input type="submit">
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

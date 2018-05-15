@@ -1,17 +1,12 @@
-{% extends "boilerplate.html" %}
-{% from "catalog.html" import render_catalog %}
+{% extends "cover.html" %}
+{% from "render_item.html" import render_item %}
 
-{% include "header.html" %}
-{% block wrap %}
-  <a href="{{url_for('new_catalog_get')}}">new catalog</a>
-  <div class=row>
-    <div class=column-4>
-      {% for name, id, user_owns in catalog_info %}
-      {{ render_catalog(name, id, user_owns) }}
-      {% endfor %}
-    </div>
-    <div class=column-8>
-
-    </div>
-  </div>
+{% block content %}
+  <h1>Latest Items</h1>
+  <br>
+    {% for item, catalog_name in latest_items_info %}
+    {{render_item(item, False)}}
+    <p>Catalog: {{catalog_name}}</p>
+    <hr>
+    {% endfor %}
 {% endblock %}

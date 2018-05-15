@@ -14,7 +14,9 @@ from oauth2client.client import FlowExchangeError
 import requests
 import httplib2
 
-from database_setup import Base, User, Catalog, Item
+from database_setup import Base, Catalog, Item
+from helpers import (equal_session_id, get_catalog_info, get_catalog_name,
+                     get_catalog, get_user_id, create_user, json_response)
 
 app = Flask(__name__)
 app.secret_key = 'super secret key'
@@ -48,65 +50,178 @@ def login():
 
 @app.route('/')
 @app.route('/catalog/')
-def catalog():
+def mainpage():
     with session_scope() as session:
-        _catalog = session.query(Catalog).all()
-        catalog_info = [(c.name, c.id, equal_session_id(c.user_id))
-                        for c in _catalog]
+        catalog_info = get_catalog_info(session)
         latest_items = (session.query(Item)
                         .order_by(desc(Item.created))
                         .limit(6)
                         .all())
-        print(latest_items)
-        return render_template("mainpage.html", catalog_info=catalog_info)
-
-
-def equal_session_id(user_id):
-    if 'user_id' in login_session:
-        return user_id == login_session['user_id']
+        latest_items_info = [(item, get_catalog_name(item.catalog_id, session))
+                             for item in latest_items]
+        return render_template("mainpage.html", catalog_info=catalog_info,
+                               latest_items_info=latest_items_info)
 
 
 @app.route('/catalog/<int:catalog_id>/')
 def catalog_items(catalog_id):
-    session = DBSession()
-    catalog = session.query(Catalog).filter_by(id=catalog_id).one()
-    items = session.query(Item).filter_by(catalog_id=catalog_id).all()
-    return str(catalog_id)
+    with session_scope() as session:
+        catalog_info = get_catalog_info(session)
+        current_catalog = session.query(Catalog).filter_by(id=catalog_id).one()
+        items = (session.query(Item)
+                 .filter_by(catalog_id=catalog_id)
+                 .order_by(desc(Item.created))
+                 .all())
+        items_info = [(item, equal_session_id(item.user_id)) for item in items]
+        return render_template("catalog_items.html",
+                               current_catalog=current_catalog,
+                               catalog_info=catalog_info,
+                               items_info=items_info)
 
 
 @app.route('/catalog/<int:id>/edit/', methods=['Get'])
 def edit_catalog_get(id):
-    if not user_owns(id):
-        return redirect(url_for('login'))
-
-    with session_scope() as session:
-        catalog_name = get_catalog(id, session).name
-
-    return render_template("edit_catalog.html", id=id, name=catalog_name)
-
-@app.route('/catalog/<int:id>/edit/', methods=['Post'])
-def edit_catalog_post(id):
-    if not user_owns(id):
+    if 'username' not in login_session:
         return redirect(url_for('login'))
 
     with session_scope() as session:
         catalog = get_catalog(id, session)
-        catalog.name = request.form['name']
+        if not catalog or not equal_session_id(catalog.user_id):
+            return redirect(url_for('login'))
 
-    return redirect(url_for('catalog'))
+        return render_template("edit_catalog.html", id=id, name=catalog.name)
 
-def user_owns(catalog_id):
+
+@app.route('/catalog/<int:id>/edit/', methods=['Post'])
+def edit_catalog_post(id):
+    if 'username' not in login_session:
+        return redirect(url_for('login'))
+
     with session_scope() as session:
-        catalog = session.query(Catalog).filter_by(id=catalog_id).first()
-        return catalog.user_id == login_session['user_id']
+        catalog = get_catalog(id, session)
+        if not catalog or not equal_session_id(catalog.user_id):
+            return redirect(url_for('login'))
 
-def get_catalog(id, session):
-    return session.query(Catalog).filter_by(id=id).first()
+        catalog.name = request.form['name']
+        return redirect(url_for('mainpage'))
 
 
 @app.route('/catalog/<int:id>/delete/')
 def delete_catalog_get(id):
-    pass
+    if 'username' not in login_session:
+        return redirect(url_for('login'))
+
+    with session_scope() as session:
+        catalog = get_catalog(id, session)
+        if not catalog or not equal_session_id(catalog.user_id):
+            return redirect(url_for('login'))
+
+        return render_template("confirm_delete.html")
+
+
+@app.route('/catalog/<int:id>/delete/', methods=['Post'])
+def delete_catalog_post(id):
+    if 'username' not in login_session:
+        return redirect(url_for('login'))
+
+    with session_scope() as session:
+        catalog = get_catalog(id, session)
+        if not catalog or not equal_session_id(catalog.user_id):
+            return redirect(url_for('login'))
+
+        catalog_items = (session.query(Item)
+                         .filter_by(catalog_id=catalog.id)
+                         .all())
+        for item in catalog_items:
+            session.delete(item)
+
+        session.delete(catalog)
+        return redirect(url_for('mainpage'))
+
+
+@app.route('/catalog/<int:catalog_id>/item/new')
+@app.route('/catalog/item/new')
+def new_item_get(catalog_id=None):
+    if 'username' not in login_session:
+        return redirect(url_for('login'))
+
+    with session_scope() as session:
+        catalog_info = get_catalog_info(session)
+
+        return render_template("new_item.html",
+                               catalog_info=catalog_info)
+
+
+@app.route('/catalog/item/new', methods=['Post'])
+def new_item_post():
+    if 'username' not in login_session:
+        return redirect(url_for('login'))
+
+    all_filled = all([request.form['name'],
+                      request.form['description'],
+                      request.form['price']])
+    if not all_filled:
+        return redirect(url_for('new_item_get'))
+
+    with session_scope() as session:
+        catalog = session.query(
+            Catalog).filter_by(name=request.form['catalog']).first()
+        session.add(
+            Item(name=request.form['name'],
+                 description=request.form['description'],
+                 price=request.form['price'],
+                 user_id=login_session['user_id'],
+                 catalog_id=catalog.id))
+
+        return redirect(url_for('catalog_items', catalog_id=catalog.id))
+
+
+@app.route('/catalog/<int:catalog_id>/item/<int:item_id>/delete/')
+def delete_item_get(catalog_id, item_id):
+    if 'username' not in login_session:
+        return redirect(url_for('/login'))
+
+    with session_scope() as session:
+        item = session.query(Item).filter_by(id=item_id).first()
+        if not item or not equal_session_id(item.user_id):
+            return redirect('/login')
+
+        session.delete(item)
+        return redirect(url_for('catalog_items', catalog_id=catalog_id))
+
+
+@app.route('/catalog/<int:catalog_id>/item/<int:item_id>/edit/')
+def edit_item_get(catalog_id, item_id):
+    if 'username' not in login_session:
+        return redirect(url_for('/login'))
+
+    with session_scope() as session:
+        item = session.query(Item).filter_by(id=item_id).first()
+        if not item or not equal_session_id(item.user_id):
+            return redirect('/login')
+
+        catalog_info = get_catalog_info(session)
+        return render_template("edit_item.html",
+                               catalog_info=catalog_info,
+                               item=item)
+
+
+@app.route('/catalog/<int:catalog_id>/item/<int:item_id>/edit/',
+           methods=['Post'])
+def edit_item_post(catalog_id, item_id):
+    if 'username' not in login_session:
+        return redirect(url_for('login'))
+
+    with session_scope() as session:
+        item = session.query(Item).filter_by(id=item_id).first()
+        if not equal_session_id(item.user_id):
+            return redirect('/login')
+
+        item.name = request.form['name']
+        item.description = request.form['description']
+        item.price = request.form['price']
+
+        return redirect(url_for('catalog_items', catalog_id=catalog_id))
 
 
 @app.route('/catalog/new', methods=['Get'])
@@ -127,13 +242,7 @@ def new_catalog_post():
             Catalog(name=request.form['name'],
                     user_id=login_session['user_id']))
 
-    return redirect(url_for('catalog'))
-
-
-def json_response(message, error_code):
-    response = make_response(json.dumps(message), error_code)
-    response.headers['Content-Type'] = 'application/json'
-    return response
+    return redirect(url_for('mainpage'))
 
 
 @app.route('/gconnect', methods=['POST'])
@@ -145,7 +254,7 @@ def gconnect():
         return json_response('Invalid state token', 401)
 
     # authorization code
-    code  = request.data
+    code = request.data
     try:
         # Upgrade the authorization code into a credentials object
 
@@ -193,15 +302,17 @@ def gconnect():
         picture=data['picture'],
         email=data['email'])
 
-    user_id = get_user_id(login_session['email'])
-    if not user_id:
-        user_id = create_user(login_session)
+    with session_scope() as session:
+        user_id = get_user_id(login_session['email'], session)
+        if not user_id:
+            user_id = create_user(login_session, session)
 
     login_session['user_id'] = user_id
 
     return render_template("connected.html",
                            username=login_session['username'],
                            picture_src=login_session['picture'])
+
 
 @app.route("/gdisconnect")
 def gdisconnect():
@@ -214,22 +325,19 @@ def gdisconnect():
     print 'In gdisconnect access token is {}'.format(access_token)
     print 'User name is '
     print login_session['username']
-    url = ('https://accounts.google.com/o/oauth2/revoke?token={}'
-           .format(login_session['access_token']))
-    h = httplib2.Http()
-    result, _ = h.request(url, 'GET')
-    print 'result is '
-    print result
 
-    if result['status'] == '200':
-        to_remove = {'access_token', 'gplus_id', 'username', 'email',
-                     'picture'}
-        for key in to_remove:
-            del login_session[key]
+    requests.post(
+        'https://accounts.google.com/o/oauth2/revoke',
+        params={'token': login_session['access_token']},
+        headers={'content-type': 'application/x-www-form-urlencoded'})
 
-        return json_response('Successfully disconnected.', 200)
+    to_remove = {'access_token', 'gplus_id', 'username', 'email',
+                 'picture', 'user_id'}
 
-    return json_response('Failed to revoke token for given user', 400)
+    for key in to_remove:
+        del login_session[key]
+
+    return redirect(url_for('mainpage'))
 
 
 def nocache(view):
@@ -252,21 +360,6 @@ def nocache(view):
 def stylesheet():
     with open("static/style.css", 'r') as f:
         return f.read()
-
-def create_user(login_session):
-    new_user = User(
-        name=login_session['username'],
-        email=login_session['email'],
-        picture=login_session['picture'])
-    with session_scope() as session:
-        session.add(new_user)
-        session.flush()
-        return new_user.id
-
-
-def get_user_id(email):
-    with session_scope() as session:
-        return session.query(User).filter_by(email=email).first().id
 
 
 if __name__ == '__main__':

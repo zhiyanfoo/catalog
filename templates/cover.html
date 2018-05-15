@@ -1,0 +1,26 @@
+{% extends "boilerplate.html" %}
+
+{% from "render_catalog.html" import render_catalog %}
+{% block wrap %}
+  <div class=row>
+    <div class="col-md-3" >
+      <a href="{{url_for('new_catalog_get')}}">new catalog</a>
+      <hr>
+    </div>
+    <div class="col-md-9">
+      <a href="{{url_for('new_item_get')}}">new item</a>
+      <hr>
+    </div>
+  </div>
+  <div class=row>
+    <div class="col-md-3" >
+      {% for name, id, user_owns in catalog_info %}
+      {{ render_catalog(name, id, user_owns) }}
+      {% endfor %}
+    </div>
+    <div class="col-md-9">
+      {% block content %}
+      {% endblock %}
+    </div>
+  </div>
+{% endblock %}
