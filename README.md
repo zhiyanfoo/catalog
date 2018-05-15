@@ -6,7 +6,7 @@ https://github.com/udacity/fullstack-nanodegree-vm
 
 Setup database
 ```bash
-python2 database_setup.py
+python2 models.py
 ```
 
 Start server

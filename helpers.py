@@ -1,8 +1,9 @@
 import json
+from functools import wraps
 
-from flask import session as login_session, make_response
+from flask import session as login_session, make_response, redirect, url_for
 
-from database_setup import User, Catalog
+from models import User, Category
 
 
 def equal_session_id(user_id):
@@ -11,16 +12,16 @@ def equal_session_id(user_id):
 
 
 def get_catalog_info(session):
-    catalog = session.query(Catalog).order_by(Catalog.name).all()
+    catalog = session.query(Category).order_by(Category.name).all()
     return [(c.name, c.id, equal_session_id(c.user_id)) for c in catalog]
 
 
-def get_catalog_name(catalog_id, session):
-    return session.query(Catalog).filter_by(id=catalog_id).first().name
+def get_category_name(category_id, session):
+    return session.query(Category).filter_by(id=category_id).first().name
 
 
-def get_catalog(id, session):
-    return session.query(Catalog).filter_by(id=id).first()
+def get_category(id, session):
+    return session.query(Category).filter_by(id=id).first()
 
 
 def get_user_id(email, session):
@@ -40,19 +41,20 @@ def create_user(login_session, session):
     return new_user.id
 
 
-def nocache(view):
-    @wraps(view)
-    def no_cache(*args, **kwargs):
-        response = make_response(view(*args, **kwargs))
-        response.headers['Last-Modified'] = datetime.now()
-        response.headers['Cache-Control'] = ('no-store, no-cache,'
-                                             ' must-revalidate, post-check=0,'
-                                             ' pre-check=0, max-age=0')
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '-1'
-        return response
+def verify_item_form(request):
+    """Return a tuple of values if succesful, and is not succesful otherwise"""
+    item_name = request.form['name'].strip()
+    item_description = request.form['description'].strip()
+    item_price = request.form['price'].strip()
 
-    return update_wrapper(no_cache, view)
+    all_filled = all([item_name, item_description, item_price])
+    if not all_filled:
+        return redirect(url_for('new_item_get'))
+
+    if not request.form['category']:
+        return json_response("Need a category to add item", 400)
+
+    return item_name, item_description, item_price
 
 
 def json_response(message, error_code):
@@ -65,12 +67,23 @@ def item_to_json(item):
             'name': item.name,
             'description': item.description,
             'user_id': item.user_id,
-            'catalog_id': item.catalog_id}
+            'category_id': item.category_id}
 
 def item_to_tuple(item):
     d = {'name': item.name,
          'description': item.description,
          'user_id': item.user_id,
-         'catalog_id': item.catalog_id}
+         'category_id': item.category_id}
     return (item.id, d)
+
+
+def ensure_authenticated(f):
+    @wraps(f)
+    def with_authentication(*args, **kwargs):
+        if 'username' not in login_session:
+            return redirect(url_for('login'))
+
+        return f(*args, **kwargs)
+    return with_authentication
+
 

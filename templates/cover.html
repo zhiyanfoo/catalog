@@ -1,10 +1,10 @@
 {% extends "boilerplate.html" %}
 
-{% from "render_catalog.html" import render_catalog %}
+{% from "render_category.html" import render_category %}
 {% block wrap %}
   <div class=row>
     <div class="col-md-3" >
-      <a href="{{url_for('new_catalog_get')}}">new catalog</a>
+      <a href="{{url_for('new_category_get')}}">new category</a>
       <hr>
     </div>
     <div class="col-md-9">
@@ -15,7 +15,7 @@
   <div class=row>
     <div class="col-md-3" >
       {% for name, id, user_owns in catalog_info %}
-      {{ render_catalog(name, id, user_owns) }}
+      {{ render_category(name, id, user_owns) }}
       {% endfor %}
     </div>
     <div class="col-md-9">

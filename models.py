@@ -17,11 +17,11 @@ class User(Base):
     picture = Column(String(250))
 
 
-class Catalog(Base):
-    __tablename__ = 'catalog'
+class Category(Base):
+    __tablename__ = 'category'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(80), nullable=False)
+    name = Column(String(80), nullable=False, unique=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship(User)
 
@@ -34,10 +34,10 @@ class Item(Base):
     description = Column(String(250))
     price = Column(String(8))
     created = Column(DateTime, default=func.now())
-    catalog_id = Column(Integer, ForeignKey('catalog.id'))
+    category_id = Column(Integer, ForeignKey('category.id'))
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship(User)
-    catalog = relationship(Catalog)
+    category = relationship(Category)
 
 
 engine = create_engine("sqlite:///catalog.db")

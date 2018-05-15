@@ -4,9 +4,9 @@
 {% block content %}
   <h1>Latest Items</h1>
   <br>
-    {% for item, catalog_name in latest_items_info %}
+    {% for item, category_name in latest_items_info %}
     {{render_item(item, False)}}
-    <p>Catalog: {{catalog_name}}</p>
+    <p>Category: {{category_name}}</p>
     <hr>
     {% endfor %}
 {% endblock %}

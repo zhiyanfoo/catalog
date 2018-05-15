@@ -14,10 +14,11 @@ from oauth2client.client import FlowExchangeError
 import requests
 import httplib2
 
-from database_setup import Base, Catalog, Item
-from helpers import (equal_session_id, get_catalog_info, get_catalog_name,
-                     get_catalog, get_user_id, create_user, json_response,
-                     item_to_json, item_to_tuple)
+from models import Base, Category, Item
+from helpers import (equal_session_id, get_catalog_info, get_category_name,
+                     get_category, get_user_id, create_user, json_response,
+                     item_to_json, item_to_tuple, verify_item_form,
+                     ensure_authenticated)
 
 app = Flask(__name__)
 app.secret_key = 'super secret key'
@@ -50,7 +51,6 @@ def login():
 
 
 @app.route('/')
-@app.route('/catalog/')
 def mainpage():
     with session_scope() as session:
         catalog_info = get_catalog_info(session)
@@ -58,144 +58,143 @@ def mainpage():
                         .order_by(desc(Item.created))
                         .limit(6)
                         .all())
-        latest_items_info = [(item, get_catalog_name(item.catalog_id, session))
+        latest_items_info = [(item, get_category_name(item.category_id, session))
                              for item in latest_items]
         return render_template("mainpage.html", catalog_info=catalog_info,
                                latest_items_info=latest_items_info)
 
 
-@app.route('/catalog/<int:catalog_id>/')
-def catalog_items(catalog_id):
+@app.route('/category/<int:category_id>/')
+def category(category_id):
     with session_scope() as session:
         catalog_info = get_catalog_info(session)
-        current_catalog = session.query(Catalog).filter_by(id=catalog_id).one()
+        current_category = (session.query(Category)
+                            .filter_by(id=category_id).first())
+
+        if not current_category:
+            return json_response("invalid category", 404)
+
         items = (session.query(Item)
-                 .filter_by(catalog_id=catalog_id)
+                 .filter_by(category_id=category_id)
                  .order_by(desc(Item.created))
                  .all())
         items_info = [(item, equal_session_id(item.user_id)) for item in items]
-        return render_template("catalog_items.html",
-                               current_catalog=current_catalog,
+        return render_template("category.html",
+                               current_category=current_category,
                                catalog_info=catalog_info,
                                items_info=items_info)
 
 
-@app.route('/catalog/<int:id>/edit/', methods=['Get'])
-def edit_catalog_get(id):
+@app.route('/category/<int:category_id>/edit/', methods=['Get'])
+def edit_category_get(category_id):
     if 'username' not in login_session:
         return redirect(url_for('login'))
 
     with session_scope() as session:
-        catalog = get_catalog(id, session)
-        if not catalog or not equal_session_id(catalog.user_id):
+        category = get_category(category_id, session)
+        if not category or not equal_session_id(category.user_id):
             return redirect(url_for('login'))
 
-        return render_template("edit_catalog.html", id=id, name=catalog.name)
+        return render_template("edit_category.html", id=category_id,
+                               name=category.name)
 
 
-@app.route('/catalog/<int:id>/edit/', methods=['Post'])
-def edit_catalog_post(id):
-    if 'username' not in login_session:
-        return redirect(url_for('login'))
-
+@app.route('/category/<int:category_id>/edit/', methods=['Post'])
+@ensure_authenticated
+def edit_category_post(category_id):
     with session_scope() as session:
-        catalog = get_catalog(id, session)
-        if not catalog or not equal_session_id(catalog.user_id):
+        category = get_category(category_id, session)
+        if not category or not equal_session_id(category.user_id):
             return redirect(url_for('login'))
 
-        catalog.name = request.form['name']
+        new_category_name = request.form['name'].strip()
+        if not new_category_name:
+            return redirect(url_for('edit_category'))
+
+        category.name = new_category_name
         return redirect(url_for('mainpage'))
 
 
-@app.route('/catalog/<int:id>/delete/')
-def delete_catalog_get(id):
-    if 'username' not in login_session:
-        return redirect(url_for('login'))
-
+@app.route('/category/<int:category_id>/delete/')
+@ensure_authenticated
+def delete_category_get(category_id):
     with session_scope() as session:
-        catalog = get_catalog(id, session)
-        if not catalog or not equal_session_id(catalog.user_id):
+        category = get_category(category_id, session)
+        if not category or not equal_session_id(category.user_id):
             return redirect(url_for('login'))
 
         return render_template("confirm_delete.html")
 
 
-@app.route('/catalog/<int:id>/delete/', methods=['Post'])
-def delete_catalog_post(id):
-    if 'username' not in login_session:
-        return redirect(url_for('login'))
-
+@app.route('/category/<int:category_id>/delete/', methods=['Post'])
+@ensure_authenticated
+def delete_category_post(category_id):
     with session_scope() as session:
-        catalog = get_catalog(id, session)
-        if not catalog or not equal_session_id(catalog.user_id):
+        category = get_category(category_id, session)
+        if not category or not equal_session_id(category.user_id):
             return redirect(url_for('login'))
 
-        catalog_items = (session.query(Item)
-                         .filter_by(catalog_id=catalog.id)
-                         .all())
-        for item in catalog_items:
+        items = (session.query(Item)
+                 .filter_by(category_id=category.id)
+                 .all())
+        for item in items:
             session.delete(item)
 
-        session.delete(catalog)
+        session.delete(category)
         return redirect(url_for('mainpage'))
 
 
-@app.route('/catalog/<int:catalog_id>/item/new')
-@app.route('/catalog/item/new')
-def new_item_get(catalog_id=None):
-    if 'username' not in login_session:
-        return redirect(url_for('login'))
-
+@app.route('/category/<int:category_id>/item/new')
+@app.route('/category/item/new')
+@ensure_authenticated
+def new_item_get(category_id=None):
     with session_scope() as session:
         catalog_info = get_catalog_info(session)
+        if not catalog_info:
+            return json_response("Add Category first", 400)
 
         return render_template("new_item.html",
                                catalog_info=catalog_info)
 
 
-@app.route('/catalog/item/new', methods=['Post'])
+@app.route('/category/item/new', methods=['Post'])
+@ensure_authenticated
 def new_item_post():
-    if 'username' not in login_session:
-        return redirect(url_for('login'))
+    items_or_response = verify_item_form(request)
+    if not isinstance(items_or_response, tuple):
+        return items_or_response
 
-    all_filled = all([request.form['name'],
-                      request.form['description'],
-                      request.form['price']])
-    if not all_filled:
-        return redirect(url_for('new_item_get'))
+    item_name, item_description, item_price = items_or_response
 
     with session_scope() as session:
-        catalog = session.query(
-            Catalog).filter_by(name=request.form['catalog']).first()
+        category = (session.query(Category)
+                    .filter_by(name=request.form['category']).first())
+
         session.add(
-            Item(name=request.form['name'],
-                 description=request.form['description'],
-                 price=request.form['price'],
+            Item(name=item_name,
+                 description=item_description,
+                 price=item_price,
                  user_id=login_session['user_id'],
-                 catalog_id=catalog.id))
+                 category_id=category.id))
 
-        return redirect(url_for('catalog_items', catalog_id=catalog.id))
+        return redirect(url_for('category', category_id=category.id))
 
 
-@app.route('/catalog/<int:catalog_id>/item/<int:item_id>/delete/')
-def delete_item_get(catalog_id, item_id):
-    if 'username' not in login_session:
-        return redirect(url_for('/login'))
-
+@app.route('/category/<int:category_id>/item/<int:item_id>/delete/')
+@ensure_authenticated
+def delete_item_get(category_id, item_id):
     with session_scope() as session:
         item = session.query(Item).filter_by(id=item_id).first()
         if not item or not equal_session_id(item.user_id):
             return redirect('/login')
 
         session.delete(item)
-        return redirect(url_for('catalog_items', catalog_id=catalog_id))
+        return redirect(url_for('category', category_id=category_id))
 
 
-@app.route('/catalog/<int:catalog_id>/item/<int:item_id>/edit/')
-def edit_item_get(catalog_id, item_id):
-    if 'username' not in login_session:
-        return redirect(url_for('/login'))
-
+@app.route('/category/<int:category_id>/item/<int:item_id>/edit/')
+@ensure_authenticated
+def edit_item_get(category_id, item_id):
     with session_scope() as session:
         item = session.query(Item).filter_by(id=item_id).first()
         if not item or not equal_session_id(item.user_id):
@@ -207,41 +206,43 @@ def edit_item_get(catalog_id, item_id):
                                item=item)
 
 
-@app.route('/catalog/<int:catalog_id>/item/<int:item_id>/edit/',
+@app.route('/category/<int:category_id>/item/<int:item_id>/edit/',
            methods=['Post'])
-def edit_item_post(catalog_id, item_id):
-    if 'username' not in login_session:
-        return redirect(url_for('login'))
-
+@ensure_authenticated
+def edit_item_post(category_id, item_id):
     with session_scope() as session:
         item = session.query(Item).filter_by(id=item_id).first()
+        if not item:
+            return json_response("invalid id", 404)
+
         if not equal_session_id(item.user_id):
             return redirect('/login')
 
-        item.name = request.form['name']
-        item.description = request.form['description']
-        item.price = request.form['price']
+        items_or_response = verify_item_form(request)
+        if not isinstance(items_or_response, tuple):
+            return items_or_response
 
-        return redirect(url_for('catalog_items', catalog_id=catalog_id))
-
-
-@app.route('/catalog/new', methods=['Get'])
-def new_catalog_get():
-    if 'username' not in login_session:
-        return redirect('/login')
-
-    return render_template('new_catalog.html')
+        item.name, item.description, item.price = items_or_response
+        return redirect(url_for('category', category_id=category_id))
 
 
-@app.route('/catalog/new', methods=['Post'])
-def new_catalog_post():
-    if 'username' not in login_session:
-        return redirect('/login')
+@app.route('/category/new', methods=['Get'])
+@ensure_authenticated
+def new_category_get():
+    return render_template('new_category.html')
+
+
+@app.route('/category/new', methods=['Post'])
+@ensure_authenticated
+def new_category_post():
+    category_name = request.form['name'].strip()
+    if not category_name:
+        return redirect(url_for('new_category_get'))
 
     with session_scope() as session:
         session.add(
-            Catalog(name=request.form['name'],
-                    user_id=login_session['user_id']))
+            Category(name=request.form['name'],
+                     user_id=login_session['user_id']))
 
     return redirect(url_for('mainpage'))
 
@@ -320,12 +321,7 @@ def gdisconnect():
     # only disconnect a connected user.
     access_token = login_session.get('access_token')
     if access_token is None:
-        print 'Access Token is None'
         return json_response('Current user not connected', 401)
-
-    print 'In gdisconnect access token is {}'.format(access_token)
-    print 'User name is '
-    print login_session['username']
 
     requests.post(
         'https://accounts.google.com/o/oauth2/revoke',
@@ -341,8 +337,8 @@ def gdisconnect():
     return redirect(url_for('mainpage'))
 
 
-@app.route('/catalog/<int:catalog_id>/item/<int:item_id>/json/')
-def item_get_json(catalog_id, item_id):
+@app.route('/category/<int:category_id>/item/<int:item_id>/json/')
+def item_get_json(category_id, item_id):
     with session_scope() as session:
         item = session.query(Item).filter_by(id=item_id).first()
         if item:
@@ -351,41 +347,19 @@ def item_get_json(catalog_id, item_id):
         json_response({"error": "item does not exist"}, 404)
 
 
-@app.route('/catalog/json')
+@app.route('/json')
 def catalog_get_json():
     with session_scope() as session:
-        catalog = session.query(Catalog).all()
-        catalog_list = []
+        category = session.query(Category).all()
+        category_list = []
         for category in catalog:
-            items = session.query(Item).filter_by(catalog_id=category.id).all()
+            items = session.query(Item).filter_by(catagory_id=category.id).all()
             d = {'id': category.id,
                  'name': category.name,
                  'items': dict(map(item_to_tuple, items))}
-            catalog_list.append(d)
+            catagory_list.append(d)
 
         return json_response(catalog_list, 200)
-
-
-def nocache(view):
-    @wraps(view)
-    def no_cache(*args, **kwargs):
-        response = make_response(view(*args, **kwargs))
-        response.headers['Last-Modified'] = datetime.now()
-        response.headers['Cache-Control'] = ('no-store, no-cache,'
-                                             ' must-revalidate, post-check=0,'
-                                             ' pre-check=0, max-age=0')
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '-1'
-        return response
-
-    return update_wrapper(no_cache, view)
-
-
-@app.route('/static/style.css')
-@nocache
-def stylesheet():
-    with open("static/style.css", 'r') as f:
-        return f.read()
 
 
 if __name__ == '__main__':
