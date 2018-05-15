@@ -59,3 +59,11 @@ def json_response(message, error_code):
     response = make_response(json.dumps(message), error_code)
     response.headers['Content-Type'] = 'application/json'
     return response
+
+def item_to_json(item):
+    return {'id': item.id,
+            'name': item.name,
+            'description': item.description,
+            'user_id': item.user_id,
+            'catalog_id': item.catalog_id}
+

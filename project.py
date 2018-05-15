@@ -16,7 +16,8 @@ import httplib2
 
 from database_setup import Base, Catalog, Item
 from helpers import (equal_session_id, get_catalog_info, get_catalog_name,
-                     get_catalog, get_user_id, create_user, json_response)
+                     get_catalog, get_user_id, create_user, json_response,
+                     item_to_json)
 
 app = Flask(__name__)
 app.secret_key = 'super secret key'
@@ -345,15 +346,23 @@ def item_get_json(catalog_id, item_id):
     with session_scope() as session:
         item = session.query(Item).filter_by(id=item_id).first()
         if item:
-            d = {'id': item.id,
-                 'name': item.name,
-                 'description': item.description,
-                 'user_id': item.user_id,
-                 'catalog_id': item.catalog_id}
-            return json_response(d, 200)
+            return json_response(item_to_json(item), 200)
 
         json_response({"error": "item does not exist"}, 404)
 
+@app.route('/catalog/json')
+def catalog_get_json():
+    with session_scope() as session:
+        catalog = session.query(Catalog).all()
+        catalog_list = []
+        for category in catalog:
+            items = session.query(Item).filter_by(catalog_id=category.id).all()
+            d = {'id': category.id,
+                 'name': category.name,
+                 'items': map(item_to_json, items)}
+            catalog_list.append(d)
+
+        return json_response(catalog_list, 200)
 
 def nocache(view):
     @wraps(view)
