@@ -66,4 +66,3 @@ def item_to_json(item):
             'description': item.description,
             'user_id': item.user_id,
             'catalog_id': item.catalog_id}
-

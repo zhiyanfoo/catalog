@@ -6,7 +6,7 @@ from functools import wraps, update_wrapper
 from datetime import datetime
 
 from flask import (Flask, render_template, redirect, url_for, request,
-                   session as login_session, make_response, flash)
+                   session as login_session, make_response)
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
 from oauth2client.client import flow_from_clientsecrets
@@ -350,6 +350,7 @@ def item_get_json(catalog_id, item_id):
 
         json_response({"error": "item does not exist"}, 404)
 
+
 @app.route('/catalog/json')
 def catalog_get_json():
     with session_scope() as session:
@@ -363,6 +364,7 @@ def catalog_get_json():
             catalog_list.append(d)
 
         return json_response(catalog_list, 200)
+
 
 def nocache(view):
     @wraps(view)
