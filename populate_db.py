@@ -25,7 +25,7 @@ x = session.query(User).filter_by(name='u1').first()
 print(u2.id)
 session.commit()
 
-# m1 = Item(name="mi1", course="c1", description="d1", resturant_id=1)
+m1 = Item(name="mi1", course="c1", price="432.2", description="d1", catalog_id=1, user_id=1)
 # session.add(m1)
 # y = session.query(Item).all()
 # print(list(y))

@@ -1,17 +1,19 @@
-{% macro render_catalog(name, path, sep=False) %}
+{% macro render_catalog(name, id, user_owns, sep=False) %}
   <div class="catalog">
     <h2>
-      {{name}}
+      <a href={{url_for('catalog_items', catalog_id=id)}}>{{name}}</a>
     </h2>
-    <form method="get" action="{{path}}">
+    {% if user_owns %}
+    <form method="get" action="{{url_for('edit_catalog_get', id=id)}}">
       <label>
         <input type="submit" value="Edit">
       </label>
     </form>
-    <form method="get" action="{{path}}">
+    <form method="get" action="{{url_for('delete_catalog_get', id=id)}}">
       <label>
         <input type="submit" value="Delete">
       </label>
     </form>
+    {% endif %}
   </div>
 {% endmacro %}

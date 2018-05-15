@@ -3,8 +3,15 @@
 
 {% include "header.html" %}
 {% block wrap %}
-  <a href="{{new_catalog_path}}">new catalog</a>
-  {% for name, edit_path, delete_path in name_path %}
-  {{ render_catalog(name, edit_path, delete_path) }}
-{% endfor %}
+  <a href="{{url_for('new_catalog_get')}}">new catalog</a>
+  <div class=row>
+    <div class=column-4>
+      {% for name, id, user_owns in catalog_info %}
+      {{ render_catalog(name, id, user_owns) }}
+      {% endfor %}
+    </div>
+    <div class=column-8>
+
+    </div>
+  </div>
 {% endblock %}

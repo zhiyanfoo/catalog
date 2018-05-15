@@ -2,10 +2,12 @@ import json
 from contextlib import contextmanager
 import random
 import string
+from functools import wraps, update_wrapper
+from datetime import datetime
 
 from flask import (Flask, render_template, redirect, url_for, request,
                    session as login_session, make_response, flash)
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
@@ -49,30 +51,61 @@ def login():
 def catalog():
     with session_scope() as session:
         _catalog = session.query(Catalog).all()
-        name_path = [(r.name,
-                      url_for('edit_catalog', id=r.id),
-                      url_for('delete_catalog', id=r.id))
-                     for r in _catalog]
-        return render_template("mainpage.html",
-                               name_path=name_path,
-                               new_catalog_path=url_for('new_catalog_get'))
+        catalog_info = [(c.name, c.id, equal_session_id(c.user_id))
+                        for c in _catalog]
+        latest_items = (session.query(Item)
+                        .order_by(desc(Item.created))
+                        .limit(6)
+                        .all())
+        print(latest_items)
+        return render_template("mainpage.html", catalog_info=catalog_info)
 
 
-@app.route('/catalog/<int:id>/')
-def catalog_items(id):
+def equal_session_id(user_id):
+    if 'user_id' in login_session:
+        return user_id == login_session['user_id']
+
+
+@app.route('/catalog/<int:catalog_id>/')
+def catalog_items(catalog_id):
     session = DBSession()
-    catalog = session.query(Catalog).filter_by(id=id).one()
-    items = session.query(Item).filter_by(catalog_id=id).all()
-    return str(id)
+    catalog = session.query(Catalog).filter_by(id=catalog_id).one()
+    items = session.query(Item).filter_by(catalog_id=catalog_id).all()
+    return str(catalog_id)
 
 
-@app.route('/catalog/<int:id>/edit/')
-def edit_catalog(id):
-    return
+@app.route('/catalog/<int:id>/edit/', methods=['Get'])
+def edit_catalog_get(id):
+    if not user_owns(id):
+        return redirect(url_for('login'))
+
+    with session_scope() as session:
+        catalog_name = get_catalog(id, session).name
+
+    return render_template("edit_catalog.html", id=id, name=catalog_name)
+
+@app.route('/catalog/<int:id>/edit/', methods=['Post'])
+def edit_catalog_post(id):
+    if not user_owns(id):
+        return redirect(url_for('login'))
+
+    with session_scope() as session:
+        catalog = get_catalog(id, session)
+        catalog.name = request.form['name']
+
+    return redirect(url_for('catalog'))
+
+def user_owns(catalog_id):
+    with session_scope() as session:
+        catalog = session.query(Catalog).filter_by(id=catalog_id).first()
+        return catalog.user_id == login_session['user_id']
+
+def get_catalog(id, session):
+    return session.query(Catalog).filter_by(id=id).first()
 
 
 @app.route('/catalog/<int:id>/delete/')
-def delete_catalog(id):
+def delete_catalog_get(id):
     pass
 
 
@@ -90,7 +123,9 @@ def new_catalog_post():
         return redirect('/login')
 
     with session_scope() as session:
-        session.add(Catalog(name=request.form['name']))
+        session.add(
+            Catalog(name=request.form['name'],
+                    user_id=login_session['user_id']))
 
     return redirect(url_for('catalog'))
 
@@ -196,8 +231,27 @@ def gdisconnect():
 
     return json_response('Failed to revoke token for given user', 400)
 
-# @app.route('
 
+def nocache(view):
+    @wraps(view)
+    def no_cache(*args, **kwargs):
+        response = make_response(view(*args, **kwargs))
+        response.headers['Last-Modified'] = datetime.now()
+        response.headers['Cache-Control'] = ('no-store, no-cache,'
+                                             ' must-revalidate, post-check=0,'
+                                             ' pre-check=0, max-age=0')
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
+        return response
+
+    return update_wrapper(no_cache, view)
+
+
+@app.route('/static/style.css')
+@nocache
+def stylesheet():
+    with open("static/style.css", 'r') as f:
+        return f.read()
 
 def create_user(login_session):
     new_user = User(
@@ -212,7 +266,8 @@ def create_user(login_session):
 
 def get_user_id(email):
     with session_scope() as session:
-        return session.query(User).filter_by(email=email).first()
+        return session.query(User).filter_by(email=email).first().id
+
 
 if __name__ == '__main__':
     app.debug = True
