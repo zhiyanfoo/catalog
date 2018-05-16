@@ -24,8 +24,12 @@ def get_category(id, session):
     return session.query(Category).filter_by(id=id).first()
 
 
+def get_category_from_name(name, session):
+    return session.query(Category).filter_by(name=name).first()
+
+
 def get_user_id(email, session):
-    user =  session.query(User).filter_by(email=email).first()
+    user = session.query(User).filter_by(email=email).first()
     if user:
         return user.id
 
@@ -62,12 +66,14 @@ def json_response(message, error_code):
     response.headers['Content-Type'] = 'application/json'
     return response
 
+
 def item_to_json(item):
     return {'id': item.id,
             'name': item.name,
             'description': item.description,
             'user_id': item.user_id,
             'category_id': item.category_id}
+
 
 def item_to_tuple(item):
     d = {'name': item.name,
@@ -85,5 +91,3 @@ def ensure_authenticated(f):
 
         return f(*args, **kwargs)
     return with_authentication
-
-
