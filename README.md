@@ -11,6 +11,6 @@ python2 models.py
 
 Start server
 ```bash
-python2 project.py
+python2 main.py
 ```
 
