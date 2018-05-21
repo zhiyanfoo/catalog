@@ -2,7 +2,6 @@ from sqlalchemy import desc
 from flask import (render_template, redirect, url_for, request,
                    session as login_session)
 
-
 from app import app
 from models import Category, Item
 from helpers import (equal_session_id, get_catalog_info, get_category,

@@ -1,12 +1,10 @@
 from flask import (render_template, redirect, url_for, request,
                    session as login_session)
 
-
 from models import Category, Item
 from helpers import (equal_session_id, get_catalog_info, json_response,
                      ensure_authenticated, verify_item_form)
 from app import app
-
 from session import session_scope
 
 
